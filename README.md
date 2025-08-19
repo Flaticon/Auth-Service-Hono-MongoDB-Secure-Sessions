@@ -1,8 +1,8 @@
 # 🔐 Auth Service – Hono + MongoDB + Sessions  
 
-[![Build](https://img.shields.io/github/actions/workflow/status/tu-usuario/tu-repo/ci.yml?label=build&logo=github)](https://github.com/tu-usuario/tu-repo/actions)  
+[![Build](https://img.shields.io/github/actions/workflow/status/tu-usuario/tu-repo/ci.yml?label=build&logo=github)](https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions/actions)  
 [![Deploy](https://img.shields.io/badge/deploy-cloudflare%20pages-blue?logo=cloudflare)](https://pages.cloudflare.com)  
-[![License](https://img.shields.io/github/license/tu-usuario/tu-repo)](./LICENSE)  
+[![License](https://img.shields.io/github/license/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions)](./LICENSE)  
 [![Made with Hono](https://img.shields.io/badge/made%20with-hono-orange?logo=cloudflare)](https://hono.dev)  
 [![MongoDB](https://img.shields.io/badge/db-mongodb-green?logo=mongodb)](https://mongodb.com)  
 
