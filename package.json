@@ -1,0 +1,42 @@
+{
+  "name": "auth-service-hono-mongodb-secure-sessions",
+  "version": "1.0.0",
+  "description": "[![Build](https://img.shields.io/github/actions/workflow/status/tu-usuario/tu-repo/ci.yml?label=build&logo=github)](https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions/actions)   [![Deploy](https://img.shields.io/badge/deploy-cloudflare%20pages-blue?logo=cloudflare)](https://pages.cloudflare.com)   [![License](https://img.shields.io/github/license/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions)](./LICENSE)   [![Made with Hono](https://img.shields.io/badge/made%20with-hono-orange?logo=cloudflare)](https://hono.dev)   [![MongoDB](https://img.shields.io/badge/db-mongodb-green?logo=mongodb)](https://mongodb.com)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions/issues"
+  },
+  "homepage": "https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions#readme",
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.1",
+    "hono": "^4.9.2",
+    "i": "^0.3.7",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.18.0",
+    "npm": "^11.5.2",
+    "validator": "^13.15.15"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "@types/validator": "^13.15.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
+  }
+}
