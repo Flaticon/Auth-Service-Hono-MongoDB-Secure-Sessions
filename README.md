@@ -55,9 +55,7 @@ src/
 ├─ server.ts # instancia de Hono, middlewares, rutas
 └─ db.ts # conexión a Mongo
 
-yaml
-Copiar
-Editar
+
 
 ---
 
