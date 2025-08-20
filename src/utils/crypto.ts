@@ -10,7 +10,7 @@ import type { IJWTPayload } from '../types.js';
 export async function hashPassword(password: string): Promise<string> {
   const saltRounds = 12;
   return await bcrypt.hash(password, saltRounds);
-}
+}co
 
 /**
  * Verifica contraseña contra hash almacenado
