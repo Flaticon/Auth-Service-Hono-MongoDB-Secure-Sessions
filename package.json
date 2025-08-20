@@ -1,42 +1,65 @@
 {
-  "name": "auth-service-hono-mongodb-secure-sessions",
+  "name": "auth-service-typescript",
   "version": "1.0.0",
-  "description": "[![Build](https://img.shields.io/github/actions/workflow/status/tu-usuario/tu-repo/ci.yml?label=build&logo=github)](https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions/actions)   [![Deploy](https://img.shields.io/badge/deploy-cloudflare%20pages-blue?logo=cloudflare)](https://pages.cloudflare.com)   [![License](https://img.shields.io/github/license/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions)](./LICENSE)   [![Made with Hono](https://img.shields.io/badge/made%20with-hono-orange?logo=cloudflare)](https://hono.dev)   [![MongoDB](https://img.shields.io/badge/db-mongodb-green?logo=mongodb)](https://mongodb.com)",
-  "main": "index.js",
+  "description": "Servicio completo de autenticación con TypeScript, Hono y MongoDB",
+  "main": "dist/server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:prod": "NODE_ENV=production node dist/server.js",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "test": "echo \"No tests specified yet\" && exit 0",
+    "db:seed": "node dist/scripts/seed.js",
+    "db:migrate": "node dist/scripts/migrate.js"
+  },
+  "keywords": [
+    "auth",
+    "authentication",
+    "authorization",
+    "typescript",
+    "hono",
+    "mongodb",
+    "jwt",
+    "session",
+    "security"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.8.0",
+    "mongodb": "^6.3.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "validator": "^13.11.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "ts-node-dev": "^2.0.0",
+    "@types/node": "^20.10.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/validator": "^13.11.7",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "prettier": "^3.1.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions.git"
+    "url": "https://github.com/tu-usuario/auth-service-typescript.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions/issues"
+    "url": "https://github.com/tu-usuario/auth-service-typescript/issues"
   },
-  "homepage": "https://github.com/Flaticon/Auth-Service-Hono-MongoDB-Secure-Sessions#readme",
-  "dependencies": {
-    "@hono/node-server": "^1.19.0",
-    "bcryptjs": "^3.0.2",
-    "dotenv": "^17.2.1",
-    "hono": "^4.9.2",
-    "i": "^0.3.7",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.18.0",
-    "npm": "^11.5.2",
-    "validator": "^13.15.15"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.3.0",
-    "@types/validator": "^13.15.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2"
-  }
+  "homepage": "https://github.com/tu-usuario/auth-service-typescript#readme"
 }
