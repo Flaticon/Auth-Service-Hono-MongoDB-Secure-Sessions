@@ -1,8 +1,8 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '../db.js';
-import { hashPassword, verifyPassword } from '../utils/crypto.js';
-import { validateRegisterData, validatePassword } from '../utils/validators.js';
-import type { IUser, IUserPublic, IRegisterRequest, UserRole } from '../types.js';
+import { getDb } from '../db';
+import { hashPassword, verifyPassword } from '../utils/crypto';
+import { validateRegisterData, validatePassword } from '../utils/validators';
+import type { IUser, IUserPublic, IRegisterRequest, UserRole } from '../types';
 
 export class User {
   /**

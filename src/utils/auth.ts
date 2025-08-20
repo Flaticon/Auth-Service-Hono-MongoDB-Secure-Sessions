@@ -1,268 +1,390 @@
-import { Context, Next } from 'hono';
-import { AuthService } from '../services/authService.js';
-import { verifyJWT } from './crypto.js';
-import type { IJWTPayload, UserRole } from '../types.js';
+import { Hono } from 'hono';
+import { AuthService } from '../services/authService';
+import { 
+  authenticateJWT, 
+  authenticateSession, 
+  getSessionMetadata,
+  requireOwnership,
+  createRateLimit
+} from '../utils/auth';
+import type { ILoginRequest, IRegisterRequest } from '../types';
+
+const auth = new Hono();
 
 /**
- * Middleware para autenticar requests usando JWT
+ * Función auxiliar para simular cookies
  */
-export async function authenticateJWT(c: Context, next: Next) {
-  const authHeader = c.req.header('Authorization');
-  const token = authHeader?.split(' ')[1]; // Bearer TOKEN
-  
-  if (!token) {
-    return c.json({ 
-      success: false, 
-      error: 'Access token required' 
-    }, 401);
-  }
-  
+function getSimulatedCookie(c: any, name: string): string | undefined {
   try {
-    const payload = verifyJWT(token) as IJWTPayload;
+    const cookieHeader = c.req.header('Cookie');
+    if (!cookieHeader) return undefined;
     
-    // Añadir información del usuario al contexto
-    c.set('user', {
-      userId: payload.userId,
-      username: payload.username,
-      role: payload.role
-    });
+    const cookies = cookieHeader.split(';').reduce((acc: any, cookie: string) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
     
-    await next();
+    return cookies[name];
   } catch (error) {
-    return c.json({ 
-      success: false, 
-      error: 'Invalid or expired token' 
-    }, 403);
+    return undefined;
   }
 }
 
+// Rate limiting para rutas de autenticación
+const authRateLimit = createRateLimit(5, 15 * 60 * 1000); // 5 requests per 15 minutes
+
 /**
- * Middleware para autenticar usando session token
+ * POST /auth/register
+ * Registra un nuevo usuario
  */
-export async function authenticateSession(c: Context, next: Next) {
-  const sessionToken = c.req.header('X-Session-Token') || 
-                      c.req.cookie('sessionToken');
-  
-  if (!sessionToken) {
-    return c.json({ 
-      success: false, 
-      error: 'Session token required' 
-    }, 401);
-  }
-  
+auth.post('/register', authRateLimit, async (c) => {
   try {
-    const result = await AuthService.verifySession(sessionToken);
+    const body = await c.req.json() as IRegisterRequest;
+    const { username, email, password, profile } = body;
     
-    if (!result.success || !result.data) {
-      return c.json({ 
-        success: false, 
-        error: result.error || 'Invalid session' 
-      }, 401);
-    }
-    
-    // Añadir usuario y sesión al contexto
-    c.set('user', result.data.user);
-    c.set('session', result.data.session);
-    
-    await next();
-  } catch (error) {
-    console.error('Session authentication error:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Authentication error' 
-    }, 500);
-  }
-}
-
-/**
- * Middleware para verificar roles específicos
- */
-export function requireRole(...roles: UserRole[]) {
-  return async (c: Context, next: Next) => {
-    const user = c.get('user');
-    
-    if (!user) {
-      return c.json({ 
-        success: false, 
-        error: 'Authentication required' 
-      }, 401);
-    }
-    
-    const userRole = user.role || (user as any).role;
-    
-    if (!roles.includes(userRole)) {
-      return c.json({ 
-        success: false, 
-        error: 'Insufficient permissions',
-        required: roles,
-        current: userRole
-      }, 403);
-    }
-    
-    await next();
-  };
-}
-
-/**
- * Middleware para verificar que el usuario es admin
- */
-export function requireAdmin(c: Context, next: Next) {
-  return requireRole('admin')(c, next);
-}
-
-/**
- * Middleware para verificar que el usuario es el propietario del recurso
- */
-export function requireOwnership(getUserIdFromParams: (c: Context) => string) {
-  return async (c: Context, next: Next) => {
-    const user = c.get('user');
-    
-    if (!user) {
-      return c.json({ 
-        success: false, 
-        error: 'Authentication required' 
-      }, 401);
-    }
-    
-    const resourceUserId = getUserIdFromParams(c);
-    const currentUserId = user._id?.toString() || (user as any).userId;
-    
-    // Admin puede acceder a todo
-    if (user.role === 'admin') {
-      await next();
-      return;
-    }
-    
-    // Verificar ownership
-    if (currentUserId !== resourceUserId) {
-      return c.json({ 
-        success: false, 
-        error: 'Access denied. You can only access your own resources.' 
-      }, 403);
-    }
-    
-    await next();
-  };
-}
-
-/**
- * Middleware opcional - no falla si no hay autenticación
- */
-export async function optionalAuth(c: Context, next: Next) {
-  const authHeader = c.req.header('Authorization');
-  const token = authHeader?.split(' ')[1];
-  const sessionToken = c.req.header('X-Session-Token') || c.req.cookie('sessionToken');
-  
-  // Intentar JWT primero
-  if (token) {
-    try {
-      const payload = verifyJWT(token) as IJWTPayload;
-      c.set('user', {
-        userId: payload.userId,
-        username: payload.username,
-        role: payload.role
-      });
-    } catch (error) {
-      // JWT inválido, continuar sin usuario
-    }
-  }
-  // Intentar sesión si no hay JWT válido
-  else if (sessionToken) {
-    try {
-      const result = await AuthService.verifySession(sessionToken);
-      if (result.success && result.data) {
-        c.set('user', result.data.user);
-        c.set('session', result.data.session);
-      }
-    } catch (error) {
-      // Sesión inválida, continuar sin usuario
-    }
-  }
-  
-  await next();
-}
-
-/**
- * Extrae IP del request (considerando proxies)
- */
-export function getClientIP(c: Context): string {
-  return c.req.header('X-Forwarded-For') || 
-         c.req.header('X-Real-IP') || 
-         c.req.header('CF-Connecting-IP') || 
-         'unknown';
-}
-
-/**
- * Extrae metadatos de sesión del request
- */
-export function getSessionMetadata(c: Context) {
-  return {
-    userAgent: c.req.header('User-Agent') || '',
-    ipAddress: getClientIP(c),
-    device: extractDeviceInfo(c.req.header('User-Agent') || ''),
-  };
-}
-
-/**
- * Extrae información del dispositivo del User-Agent
- */
-function extractDeviceInfo(userAgent: string): string {
-  if (!userAgent) return 'Unknown';
-  
-  // Detectar móvil
-  if (/Mobile|Android|iPhone|iPad/.test(userAgent)) {
-    if (/iPhone/.test(userAgent)) return 'iPhone';
-    if (/iPad/.test(userAgent)) return 'iPad';
-    if (/Android/.test(userAgent)) return 'Android';
-    return 'Mobile';
-  }
-  
-  // Detectar navegadores de escritorio
-  if (/Chrome/.test(userAgent)) return 'Chrome Desktop';
-  if (/Firefox/.test(userAgent)) return 'Firefox Desktop';
-  if (/Safari/.test(userAgent) && !/Chrome/.test(userAgent)) return 'Safari Desktop';
-  if (/Edge/.test(userAgent)) return 'Edge Desktop';
-  
-  return 'Desktop';
-}
-
-/**
- * Middleware de rate limiting simple
- */
-export function createRateLimit(maxRequests: number, windowMs: number) {
-  const requests = new Map<string, { count: number; resetTime: number }>();
-  
-  return async (c: Context, next: Next) => {
-    const key = getClientIP(c);
-    const now = Date.now();
-    const windowStart = now - windowMs;
-    
-    // Limpiar entradas antiguas
-    for (const [ip, data] of requests.entries()) {
-      if (data.resetTime < windowStart) {
-        requests.delete(ip);
-      }
-    }
-    
-    // Obtener o crear contador para esta IP
-    let requestData = requests.get(key);
-    if (!requestData || requestData.resetTime < windowStart) {
-      requestData = { count: 0, resetTime: now + windowMs };
-      requests.set(key, requestData);
-    }
-    
-    // Verificar límite
-    if (requestData.count >= maxRequests) {
+    if (!username || !password) {
       return c.json({
         success: false,
-        error: 'Too many requests',
-        retryAfter: Math.ceil((requestData.resetTime - now) / 1000)
-      }, 429);
+        error: 'Username and password are required'
+      }, 400);
     }
     
-    // Incrementar contador
-    requestData.count++;
+    const metadata = getSessionMetadata(c);
     
-    await next();
-  };
-}
+    const result = await AuthService.register(
+      { username, email, password, profile },
+      metadata
+    );
+    
+    if (result.success && result.sessionToken) {
+      // Configurar cookie de sesión
+      c.header('Set-Cookie', 
+        `sessionToken=${result.sessionToken}; HttpOnly; Secure=${process.env.NODE_ENV === 'production'}; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}; Path=/`
+      );
+    }
+    
+    return c.json(result, result.success ? 201 : 400);
+  } catch (error) {
+    console.error('Register route error:', error);
+    return c.json({
+      success: false,
+      error: 'Registration failed'
+    }, 500);
+  }
+});
+
+/**
+ * POST /auth/login
+ * Inicia sesión de usuario
+ */
+auth.post('/login', authRateLimit, async (c) => {
+  try {
+    const body = await c.req.json() as ILoginRequest;
+    const { identifier, password } = body;
+    
+    if (!identifier || !password) {
+      return c.json({
+        success: false,
+        error: 'Username/email and password are required'
+      }, 400);
+    }
+    
+    const metadata = getSessionMetadata(c);
+    
+    const result = await AuthService.login({ identifier, password }, metadata);
+    
+    if (result.success && result.sessionToken) {
+      // Configurar cookie de sesión
+      c.header('Set-Cookie', 
+        `sessionToken=${result.sessionToken}; HttpOnly; Secure=${process.env.NODE_ENV === 'production'}; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}; Path=/`
+      );
+    }
+    
+    return c.json(result, result.success ? 200 : 401);
+  } catch (error) {
+    console.error('Login route error:', error);
+    return c.json({
+      success: false,
+      error: 'Login failed'
+    }, 500);
+  }
+});
+
+/**
+ * POST /auth/logout
+ * Cierra sesión del usuario
+ */
+auth.post('/logout', authenticateSession, async (c) => {
+  try {
+    const sessionToken = c.req.header('X-Session-Token') || getSimulatedCookie(c, 'sessionToken');
+    
+    if (!sessionToken) {
+      return c.json({
+        success: false,
+        error: 'No session token provided'
+      }, 400);
+    }
+    
+    const result = await AuthService.logout(sessionToken);
+    
+    // Limpiar cookie
+    if (result.success) {
+      c.header('Set-Cookie', 
+        'sessionToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/'
+      );
+    }
+    
+    return c.json(result);
+  } catch (error) {
+    console.error('Logout route error:', error);
+    return c.json({
+      success: false,
+      error: 'Logout failed'
+    }, 500);
+  }
+});
+
+/**
+ * POST /auth/logout-all
+ * Cierra todas las sesiones del usuario
+ */
+auth.post('/logout-all', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user') as any;
+    
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found in context'
+      }, 401);
+    }
+    
+    const result = await AuthService.logoutAll(user._id.toString());
+    
+    // Limpiar cookie de la sesión actual también
+    if (result.success) {
+      c.header('Set-Cookie', 
+        'sessionToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/'
+      );
+    }
+    
+    return c.json(result);
+  } catch (error) {
+    console.error('Logout all route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to logout from all sessions'
+    }, 500);
+  }
+});
+
+/**
+ * GET /auth/me
+ * Obtiene información del usuario actual
+ */
+auth.get('/me', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    return c.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Get me route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to get user information'
+    }, 500);
+  }
+});
+
+/**
+ * GET /auth/verify
+ * Verifica si el token JWT es válido
+ */
+auth.get('/verify', authenticateJWT, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    return c.json({
+      success: true,
+      data: user,
+      message: 'Token is valid'
+    });
+  } catch (error) {
+    console.error('Verify route error:', error);
+    return c.json({
+      success: false,
+      error: 'Token verification failed'
+    }, 500);
+  }
+});
+
+/**
+ * PUT /auth/profile
+ * Actualiza el perfil del usuario
+ */
+auth.put('/profile', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user');
+    const updates = await c.req.json();
+    
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found in context'
+      }, 401);
+    }
+    
+    const result = await AuthService.updateProfile(user._id.toString(), updates);
+    
+    return c.json(result, result.success ? 200 : 400);
+  } catch (error) {
+    console.error('Update profile route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to update profile'
+    }, 500);
+  }
+});
+
+/**
+ * PUT /auth/change-password
+ * Cambia la contraseña del usuario
+ */
+auth.put('/change-password', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user');
+    const { currentPassword, newPassword } = await c.req.json();
+    
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found in context'
+      }, 401);
+    }
+    
+    if (!currentPassword || !newPassword) {
+      return c.json({
+        success: false,
+        error: 'Current password and new password are required'
+      }, 400);
+    }
+    
+    const result = await AuthService.changePassword(
+      user._id.toString(),
+      currentPassword,
+      newPassword
+    );
+    
+    // Si el cambio fue exitoso, limpiar cookie para forzar re-login
+    if (result.success) {
+      c.header('Set-Cookie', 
+        'sessionToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/'
+      );
+    }
+    
+    return c.json(result, result.success ? 200 : 400);
+  } catch (error) {
+    console.error('Change password route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to change password'
+    }, 500);
+  }
+});
+
+/**
+ * GET /auth/sessions
+ * Obtiene sesiones activas del usuario
+ */
+auth.get('/sessions', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found in context'
+      }, 401);
+    }
+    
+    const result = await AuthService.getActiveSessions(user._id.toString());
+    
+    return c.json(result, result.success ? 200 : 500);
+  } catch (error) {
+    console.error('Get sessions route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to get active sessions'
+    }, 500);
+  }
+});
+
+/**
+ * DELETE /auth/sessions/:sessionId
+ * Revoca una sesión específica
+ */
+auth.delete('/sessions/:sessionId', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user');
+    const sessionId = c.req.param('sessionId');
+    
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found in context'
+      }, 401);
+    }
+    
+    if (!sessionId) {
+      return c.json({
+        success: false,
+        error: 'Session ID is required'
+      }, 400);
+    }
+    
+    const result = await AuthService.revokeSession(user._id.toString(), sessionId);
+    
+    return c.json(result, result.success ? 200 : 400);
+  } catch (error) {
+    console.error('Revoke session route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to revoke session'
+    }, 500);
+  }
+});
+
+/**
+ * GET /auth/refresh
+ * Refresca la sesión actual (actualiza lastAccess)
+ */
+auth.get('/refresh', authenticateSession, async (c) => {
+  try {
+    const user = c.get('user') as any;
+    const session = c.get('session') as any;
+    
+    return c.json({
+      success: true,
+      data: {
+        user,
+        session: session ? {
+          id: session._id,
+          lastAccess: session.lastAccess
+        } : null
+      },
+      message: 'Session refreshed'
+    });
+  } catch (error) {
+    console.error('Refresh route error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to refresh session'
+    }, 500);
+  }
+});
+
+export default auth;

@@ -1,6 +1,6 @@
 import { MongoClient, Db } from 'mongodb';
 import dotenv from 'dotenv';
-import type { IEnvConfig } from './types.js';
+import type { IEnvConfig } from './types';
 
 // Cargar variables de entorno
 dotenv.config();

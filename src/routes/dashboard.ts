@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { authenticateSession, requireRole, requireAdmin } from '../utils/auth.js';
-import { User } from '../models/User.js';
-import { Session } from '../models/Session.js';
-import type { IUserPublic } from '../types.js';
+import { authenticateSession, requireRole, requireAdmin } from '../utils/auth';
+import { User } from '../models/User';
+import { Session } from '../models/Session';
+import type { IUserPublic } from '../types';
 
 const dashboard = new Hono();
 

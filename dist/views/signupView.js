@@ -1,8 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.signupView = signupView;
 /**
  * Vista HTML para la página de registro
  */
-export function signupView(error?: string) {
-  return `<!DOCTYPE html>
+function signupView(error) {
+    return `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">

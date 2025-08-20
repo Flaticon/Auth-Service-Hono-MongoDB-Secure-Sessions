@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
-import { AuthService } from '../services/authService.js';
+import { AuthService } from '../services/authService';
 import { 
   authenticateJWT, 
   authenticateSession, 
   getSessionMetadata,
   requireOwnership,
   createRateLimit
-} from '../utils/auth.js';
-import type { ILoginRequest, IRegisterRequest } from '../types.js';
+} from '../utils/auth';
+import type { ILoginRequest, IRegisterRequest } from '../types';
 
 const auth = new Hono();
 

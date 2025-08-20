@@ -138,7 +138,7 @@ export function isValidObjectId(id: string): boolean {
  * Valida que un string no esté vacío después de trim
  */
 export function isNotEmpty(value: string): boolean {
-  return value && value.trim().length > 0;
+  return Boolean(value && value.trim().length > 0);
 }
 
 /**

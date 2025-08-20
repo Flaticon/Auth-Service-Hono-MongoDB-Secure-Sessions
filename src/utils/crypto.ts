@@ -10,7 +10,7 @@ import type { IJWTPayload } from '../types.js';
 export async function hashPassword(password: string): Promise<string> {
   const saltRounds = 12;
   return await bcrypt.hash(password, saltRounds);
-}co
+}
 
 /**
  * Verifica contraseña contra hash almacenado
@@ -23,9 +23,11 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Genera JWT token con payload
  */
 export function generateJWT(payload: Omit<IJWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, config.JWT_SECRET, { 
-    expiresIn: config.JWT_EXPIRES_IN 
-  });
+  return jwt.sign(
+    payload as any, 
+    config.JWT_SECRET, 
+    { expiresIn: config.JWT_EXPIRES_IN }
+  );
 }
 
 /**
