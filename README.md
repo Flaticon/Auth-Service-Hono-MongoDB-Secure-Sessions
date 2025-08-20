@@ -7,7 +7,17 @@
 [![MongoDB](https://img.shields.io/badge/db-mongodb-green?logo=mongodb)](https://mongodb.com)  
 
 Microservicio de autenticación clásico basado en **sesiones con cookies HttpOnly** y almacenamiento en **MongoDB**.  
-Diseñado para ser simple, seguro y reutilizable en cualquier proyecto frontend (**Astro, React, etc.**) o como servicio independiente.  
+Diseñado para ser simple, seguro y reutilizable en cualquier proyecto frontend (**Astro, React, etc.**) o como servicio independiente. 
+
+Incluye:
+✅ Registro de usuarios con validación
+✅ Login seguro con JWT tokens
+✅ Base de datos MongoDB en la nube
+✅ Frontend web responsivo
+✅ API REST completa
+✅ Middleware de seguridad
+✅ Manejo de errores robusto
+✅ TypeScript para mejor código
 
 ---
 
